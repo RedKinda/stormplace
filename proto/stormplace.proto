@@ -1,0 +1,21 @@
+syntax = "proto3";
+
+package stormplace;
+
+// Public ID of each client. Used to identify changes and logins. 'server' is reserved
+message PublicID {
+  string name = 1;
+}
+
+// Pixel change
+message PixelUpdate {
+  uint32 color = 1;  // New pixel color
+  uint32 x = 2;
+  uint32 y = 3;
+  PublicID source = 4;
+}
+
+service Stormplace {
+  rpc StreamChanges(PublicID) returns (stream PixelUpdate) {}
+
+}
