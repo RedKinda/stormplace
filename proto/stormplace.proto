@@ -7,15 +7,47 @@ message PublicID {
   string name = 1;
 }
 
+message PrivateID {
+  PublicID public_id = 1;
+  string token = 2;
+}
+
 // Pixel change
 message PixelUpdate {
   uint32 color = 1;  // New pixel color
-  uint32 x = 2;
-  uint32 y = 3;
+  uint64 x = 2;
+  uint64 y = 3;
   PublicID source = 4;
+}
+
+message PixelPaintRequest {
+  uint32 color = 1;  // New pixel color
+  uint64 x = 2;
+  uint64 y = 3;
+  PublicID source = 4;
+}
+
+message PixelPaintResponse {
+  bool success = 1;
+}
+
+message CanvasMetadataRequest {
+  PublicID id = 1;
+}
+
+message CanvasMetadata {
+  uint64 x_size = 1;
+  uint64 y_size = 2;
+  uint64 subscriber_count = 3;
 }
 
 service Stormplace {
   rpc StreamChanges(PublicID) returns (stream PixelUpdate) {}
+
+  rpc GetCanvasStateOnce(PublicID) returns (stream PixelUpdate) {}
+
+  rpc PaintPixel(PixelPaintRequest) returns (PixelPaintResponse) {}
+
+  rpc GetMetadata(CanvasMetadataRequest) returns (CanvasMetadata) {}
 
 }

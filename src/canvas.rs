@@ -8,10 +8,10 @@ use tokio::sync::mpsc::Receiver;
 use tokio_stream::wrappers::BroadcastStream;
 use tonic::Status;
 
-use crate::PixelUpdate;
+use crate::{CanvasMetadata, PixelUpdate};
 
 type Location = (u64, u64);
-type Color = u8;
+pub(crate) type Color = u8;
 
 #[derive(Copy, Clone, Debug)]
 pub struct Pixel {
@@ -82,6 +82,16 @@ impl Playground {
         res
     }
 
+    pub async fn get_pixels_as_updates(&self) -> Vec<PixelUpdate> {
+        let canvas_reader = self.canvas.read().await;
+        return canvas_reader.iter().map(|((x, y), pixel)| PixelUpdate {
+            color: pixel.color as u32,
+            x: *x,
+            y: *y,
+            source: None
+        }).collect::<Vec<PixelUpdate>>();
+    }
+
     pub async fn set_pixel(&self, location: Location, color: Color) {
         if location.0 < self.max_height && location.1 < self.max_width && location.0 >= 0 && location.1 >= 0 {
             let mut canvas = self.canvas.write().await;
@@ -89,8 +99,8 @@ impl Playground {
             canvas.insert(location, Pixel::from_color(color));
             self.broadcaster.send(PixelUpdate{
                 color: color as u32,
-                x: location.0 as u32,
-                y: location.1 as u32,
+                x: location.0,
+                y: location.1,
                 source: None
             });
         } else {
@@ -104,5 +114,13 @@ impl Playground {
         self.listeners.push(rx);
         tx*/
 
+    }
+
+    pub fn get_metadata(&self) -> CanvasMetadata {
+        CanvasMetadata {
+            x_size: self.max_width,
+            y_size: self.max_height,
+            subscriber_count: self.broadcaster.receiver_count() as u64
+        }
     }
 }

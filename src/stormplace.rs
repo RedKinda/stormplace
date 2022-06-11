@@ -4,18 +4,56 @@ pub struct PublicId {
     #[prost(string, tag="1")]
     pub name: ::prost::alloc::string::String,
 }
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PrivateId {
+    #[prost(message, optional, tag="1")]
+    pub public_id: ::core::option::Option<PublicId>,
+    #[prost(string, tag="2")]
+    pub token: ::prost::alloc::string::String,
+}
 /// Pixel change
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PixelUpdate {
     /// New pixel color
     #[prost(uint32, tag="1")]
     pub color: u32,
-    #[prost(uint32, tag="2")]
-    pub x: u32,
-    #[prost(uint32, tag="3")]
-    pub y: u32,
+    #[prost(uint64, tag="2")]
+    pub x: u64,
+    #[prost(uint64, tag="3")]
+    pub y: u64,
     #[prost(message, optional, tag="4")]
     pub source: ::core::option::Option<PublicId>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PixelPaintRequest {
+    /// New pixel color
+    #[prost(uint32, tag="1")]
+    pub color: u32,
+    #[prost(uint64, tag="2")]
+    pub x: u64,
+    #[prost(uint64, tag="3")]
+    pub y: u64,
+    #[prost(message, optional, tag="4")]
+    pub source: ::core::option::Option<PublicId>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct PixelPaintResponse {
+    #[prost(bool, tag="1")]
+    pub success: bool,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CanvasMetadataRequest {
+    #[prost(message, optional, tag="1")]
+    pub id: ::core::option::Option<PublicId>,
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct CanvasMetadata {
+    #[prost(uint64, tag="1")]
+    pub x_size: u64,
+    #[prost(uint64, tag="2")]
+    pub y_size: u64,
+    #[prost(uint64, tag="3")]
+    pub subscriber_count: u64,
 }
 /// Generated client implementations.
 pub mod stormplace_client {
@@ -103,6 +141,66 @@ pub mod stormplace_client {
             );
             self.inner.server_streaming(request.into_request(), path, codec).await
         }
+        pub async fn get_canvas_state_once(
+            &mut self,
+            request: impl tonic::IntoRequest<super::PublicId>,
+        ) -> Result<
+            tonic::Response<tonic::codec::Streaming<super::PixelUpdate>>,
+            tonic::Status,
+        > {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/stormplace.Stormplace/GetCanvasStateOnce",
+            );
+            self.inner.server_streaming(request.into_request(), path, codec).await
+        }
+        pub async fn paint_pixel(
+            &mut self,
+            request: impl tonic::IntoRequest<super::PixelPaintRequest>,
+        ) -> Result<tonic::Response<super::PixelPaintResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/stormplace.Stormplace/PaintPixel",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
+        pub async fn get_metadata(
+            &mut self,
+            request: impl tonic::IntoRequest<super::CanvasMetadataRequest>,
+        ) -> Result<tonic::Response<super::CanvasMetadata>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/stormplace.Stormplace/GetMetadata",
+            );
+            self.inner.unary(request.into_request(), path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -122,6 +220,24 @@ pub mod stormplace_server {
             &self,
             request: tonic::Request<super::PublicId>,
         ) -> Result<tonic::Response<Self::StreamChangesStream>, tonic::Status>;
+        ///Server streaming response type for the GetCanvasStateOnce method.
+        type GetCanvasStateOnceStream: futures_core::Stream<
+                Item = Result<super::PixelUpdate, tonic::Status>,
+            >
+            + Send
+            + 'static;
+        async fn get_canvas_state_once(
+            &self,
+            request: tonic::Request<super::PublicId>,
+        ) -> Result<tonic::Response<Self::GetCanvasStateOnceStream>, tonic::Status>;
+        async fn paint_pixel(
+            &self,
+            request: tonic::Request<super::PixelPaintRequest>,
+        ) -> Result<tonic::Response<super::PixelPaintResponse>, tonic::Status>;
+        async fn get_metadata(
+            &self,
+            request: tonic::Request<super::CanvasMetadataRequest>,
+        ) -> Result<tonic::Response<super::CanvasMetadata>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct StormplaceServer<T: Stormplace> {
@@ -207,6 +323,125 @@ pub mod stormplace_server {
                                 send_compression_encodings,
                             );
                         let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/stormplace.Stormplace/GetCanvasStateOnce" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetCanvasStateOnceSvc<T: Stormplace>(pub Arc<T>);
+                    impl<
+                        T: Stormplace,
+                    > tonic::server::ServerStreamingService<super::PublicId>
+                    for GetCanvasStateOnceSvc<T> {
+                        type Response = super::PixelUpdate;
+                        type ResponseStream = T::GetCanvasStateOnceStream;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::ResponseStream>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::PublicId>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).get_canvas_state_once(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = GetCanvasStateOnceSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.server_streaming(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/stormplace.Stormplace/PaintPixel" => {
+                    #[allow(non_camel_case_types)]
+                    struct PaintPixelSvc<T: Stormplace>(pub Arc<T>);
+                    impl<
+                        T: Stormplace,
+                    > tonic::server::UnaryService<super::PixelPaintRequest>
+                    for PaintPixelSvc<T> {
+                        type Response = super::PixelPaintResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::PixelPaintRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move { (*inner).paint_pixel(request).await };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = PaintPixelSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/stormplace.Stormplace/GetMetadata" => {
+                    #[allow(non_camel_case_types)]
+                    struct GetMetadataSvc<T: Stormplace>(pub Arc<T>);
+                    impl<
+                        T: Stormplace,
+                    > tonic::server::UnaryService<super::CanvasMetadataRequest>
+                    for GetMetadataSvc<T> {
+                        type Response = super::CanvasMetadata;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::CanvasMetadataRequest>,
+                        ) -> Self::Future {
+                            let inner = self.0.clone();
+                            let fut = async move {
+                                (*inner).get_metadata(request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = GetMetadataSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            );
+                        let res = grpc.unary(method, req).await;
                         Ok(res)
                     };
                     Box::pin(fut)

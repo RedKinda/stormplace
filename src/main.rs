@@ -14,7 +14,8 @@ use stormplace::*;
 use crate::stormplace::PublicId;
 
 mod canvas;
-mod stormplace{
+
+mod stormplace {
     include!("stormplace.rs");
 
     // Add this
@@ -23,8 +24,8 @@ mod stormplace{
 }
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>>  {
-    let playground = canvas::Playground::new(1, 3);
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let playground = canvas::Playground::new(3, 3);
     playground.set_pixel((0, 0), 5).await;
     // dbg!(playground.get_all_pixels().await);
 
@@ -39,7 +40,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>>  {
         let mut counter = 0;
         loop {
             palyground_writer.set_pixel((0, 0), counter).await;
-            tokio::time::sleep(Duration::new(1, 0)).await;
+            tokio::time::sleep(Duration::new(2, 0)).await;
             counter += 1;
         }
     });
@@ -71,7 +72,6 @@ struct StormplaceServer {
 #[tonic::async_trait]
 impl stormplace_server::Stormplace for StormplaceServer {
     type StreamChangesStream = ReceiverStream<Result<PixelUpdate, Status>>;
-
     async fn stream_changes(&self, request: Request<PublicId>) -> Result<Response<Self::StreamChangesStream>, Status> {
         let playground = Arc::clone(&self.playground);
         let mut subscriber = playground.subscribe();
@@ -92,12 +92,49 @@ impl stormplace_server::Stormplace for StormplaceServer {
                     terminate = true;
                 }
                 if terminate {
-                    break
+                    break;
                 }
             }
         });
 
         Ok(Response::new(ReceiverStream::new(rx)))
+    }
+
+    type GetCanvasStateOnceStream = ReceiverStream<Result<PixelUpdate, Status>>;
+
+    async fn get_canvas_state_once(
+        &self,
+        request: tonic::Request<PublicId>,
+    ) -> Result<tonic::Response<Self::GetCanvasStateOnceStream>, tonic::Status> {
+        let playground = Arc::clone(&self.playground);
+
+        let (tx, rx) = mpsc::channel(256);
+        tokio::spawn(async move {
+            for update in playground.get_pixels_as_updates().await {
+                tx.send(Ok(update)).await;
+            }
+        });
+
+        Ok(Response::new(ReceiverStream::new(rx)))
+    }
+
+    async fn paint_pixel(
+        &self,
+        request: tonic::Request<PixelPaintRequest>,
+    ) -> Result<tonic::Response<PixelPaintResponse>, tonic::Status> {
+        let playground = Arc::clone(&self.playground);
+        let req = request.get_ref();
+        playground.set_pixel((req.x as u64, req.y as u64), req.color as canvas::Color).await;
+
+        return Ok(Response::new(PixelPaintResponse { success: true }));
+    }
+
+    async fn get_metadata(
+        &self,
+        request: tonic::Request<CanvasMetadataRequest>,
+    ) -> Result<tonic::Response<CanvasMetadata>, tonic::Status> {
+        let playground = Arc::clone(&self.playground);
+        Ok(Response::new(playground.get_metadata()))
     }
 }
 
