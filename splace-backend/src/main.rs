@@ -12,10 +12,6 @@ mod canvas;
 
 mod stormplace {
     include!("stormplace.rs");
-
-    // Add this
-    pub(crate) const FILE_DESCRIPTOR_SET: &[u8] =
-        tonic::include_file_descriptor_set!("greeter_descriptor");
 }
 
 #[tokio::main]
@@ -40,11 +36,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     });
 
-    let reflection_service = tonic_reflection::server::Builder::configure()
-        .register_encoded_file_descriptor_set(stormplace::FILE_DESCRIPTOR_SET)
-        .build()
-        .unwrap();
-
     let addr = "[::1]:50051".parse().unwrap();
     let server = StormplaceServer {
         playground: playground_counter,
@@ -53,7 +44,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Server::builder()
         .add_service(stormplace_server::StormplaceServer::new(server))
-        .add_service(reflection_service)
         .serve(addr)
         .await?;
 

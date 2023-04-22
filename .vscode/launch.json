@@ -7,15 +7,15 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug executable 'stormplace'",
+            "name": "Debug executable 'splace-backend'",
             "cargo": {
                 "args": [
                     "build",
-                    "--bin=stormplace",
-                    "--package=stormplace"
+                    "--bin=splace-backend",
+                    "--package=splace-backend"
                 ],
                 "filter": {
-                    "name": "stormplace",
+                    "name": "splace-backend",
                     "kind": "bin"
                 }
             },
@@ -25,16 +25,53 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in executable 'stormplace'",
+            "name": "Debug unit tests in executable 'splace-backend'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bin=stormplace",
-                    "--package=stormplace"
+                    "--bin=splace-backend",
+                    "--package=splace-backend"
                 ],
                 "filter": {
-                    "name": "stormplace",
+                    "name": "splace-backend",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'splace-frontend'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=splace-frontend",
+                    "--package=splace-frontend"
+                ],
+                "filter": {
+                    "name": "splace-frontend",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'splace-frontend'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=splace-frontend",
+                    "--package=splace-frontend"
+                ],
+                "filter": {
+                    "name": "splace-frontend",
                     "kind": "bin"
                 }
             },
