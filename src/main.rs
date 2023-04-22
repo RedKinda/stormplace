@@ -1,15 +1,10 @@
 use std::sync::Arc;
 use std::time::Duration;
-
-use futures_util::StreamExt;
-use tokio::sync::broadcast::Receiver;
-use tokio::sync::mpsc;
-use tokio_stream::wrappers::{BroadcastStream, ReceiverStream};
-use tokio_stream::wrappers::errors::BroadcastStreamRecvError;
-use tonic::{Code, Request, Response, Status};
-use tonic::transport::Server;
-
 use stormplace::*;
+use tokio::sync::mpsc;
+use tokio_stream::wrappers::ReceiverStream;
+use tonic::transport::Server;
+use tonic::{Code, Request, Response, Status};
 
 use crate::stormplace::PublicId;
 
@@ -51,7 +46,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .unwrap();
 
     let addr = "[::1]:50051".parse().unwrap();
-    let server = StormplaceServer { playground: playground_counter };
+    let server = StormplaceServer {
+        playground: playground_counter,
+    };
     println!("Stormplace server listening on {}", addr);
 
     Server::builder()
@@ -63,16 +60,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-
 struct StormplaceServer {
     playground: Arc<canvas::Playground>,
 }
 
-
 #[tonic::async_trait]
 impl stormplace_server::Stormplace for StormplaceServer {
     type StreamChangesStream = ReceiverStream<Result<PixelUpdate, Status>>;
-    async fn stream_changes(&self, request: Request<PublicId>) -> Result<Response<Self::StreamChangesStream>, Status> {
+    async fn stream_changes(
+        &self,
+        request: Request<PublicId>,
+    ) -> Result<Response<Self::StreamChangesStream>, Status> {
         let playground = Arc::clone(&self.playground);
         let mut subscriber = playground.subscribe();
         let (tx, rx) = mpsc::channel(256);
@@ -84,7 +82,7 @@ impl stormplace_server::Stormplace for StormplaceServer {
                 let update = subscriber.recv().await;
                 let to_send = match update {
                     Ok(event) => Ok(event),
-                    Err(e) => Err(Status::new(Code::Unknown, e.to_string()))
+                    Err(e) => Err(Status::new(Code::Unknown, e.to_string())),
                 };
                 let mut terminate = to_send.is_err();
                 if let Err(e) = tx.send(to_send).await {
@@ -104,7 +102,7 @@ impl stormplace_server::Stormplace for StormplaceServer {
 
     async fn get_canvas_state_once(
         &self,
-        request: tonic::Request<PublicId>,
+        _request: tonic::Request<PublicId>,
     ) -> Result<tonic::Response<Self::GetCanvasStateOnceStream>, tonic::Status> {
         let playground = Arc::clone(&self.playground);
 
@@ -124,24 +122,28 @@ impl stormplace_server::Stormplace for StormplaceServer {
     ) -> Result<tonic::Response<PixelPaintResponse>, tonic::Status> {
         let playground = Arc::clone(&self.playground);
         let req = request.get_ref();
-        playground.set_pixel((req.x as u64, req.y as u64), req.color as canvas::Color).await;
+        playground
+            .set_pixel((req.x, req.y), req.color as canvas::Color)
+            .await;
 
         return Ok(Response::new(PixelPaintResponse { success: true }));
     }
 
     async fn get_metadata(
         &self,
-        request: tonic::Request<CanvasMetadataRequest>,
+        _request: tonic::Request<CanvasMetadataRequest>,
     ) -> Result<tonic::Response<CanvasMetadata>, tonic::Status> {
         let playground = Arc::clone(&self.playground);
         Ok(Response::new(playground.get_metadata()))
     }
 }
 
-
 async fn random_reads(playground: Arc<canvas::Playground>) {
     loop {
         tokio::time::sleep(Duration::new(10, 0)).await;
-        println!("Pixel at (0, 0) is {}", playground.get_pixel_at_location(&(0, 0)).await)
+        println!(
+            "Pixel at (0, 0) is {}",
+            playground.get_pixel_at_location(&(0, 0)).await
+        )
     }
 }
