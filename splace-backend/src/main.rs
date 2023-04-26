@@ -16,7 +16,7 @@ mod stormplace {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let playground = canvas::Playground::new(3, 3);
+    let playground = canvas::Playground::new(1000, 1000);
     playground.set_pixel((0, 0), 5).await;
     // dbg!(playground.get_all_pixels().await);
 
@@ -31,7 +31,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let mut counter = 0;
         loop {
             palyground_writer.set_pixel((0, 0), counter).await;
-            tokio::time::sleep(Duration::new(2, 0)).await;
+            tokio::time::sleep(Duration::new(5, 0)).await;
             counter += 1;
         }
     });

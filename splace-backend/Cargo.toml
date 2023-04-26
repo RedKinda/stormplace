@@ -6,9 +6,9 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tonic = "0.7.2"
+tonic = { version = "0.9.2", features = ["gzip"] }
 tokio = { version = "1.18.2", features = ["macros", "rt-multi-thread", "sync"] }
-prost = "0.10.4"
+prost = "0.11.9"
 futures-core = "0.3"
 futures-util = "0.3"
 tokio-stream = { version = "0.1.8", features = ["sync"] }
@@ -16,4 +16,4 @@ tonic-reflection = "0.4.0"
 dashmap = "5.4.0"
 
 [build-dependencies]
-tonic-build = "0.7.2"
+tonic-build = "0.9.2"
